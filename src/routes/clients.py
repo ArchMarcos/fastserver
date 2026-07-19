@@ -1,96 +1,142 @@
-# Rotas do cliente - esqueleto
+# Rotas do cliente — FastAPI Router
+from fastapi import APIRouter, Depends, Query, status
 from loguru import logger
 
+from src.schemas.client import (
+    CartAddRequest,
+    CartRemoveRequest,
+    CartQtyRequest,
+    CartObsRequest,
+    FavoriteResponse,
+)
+from src.schemas.common import SuccessResponse
+from src.middlewares.auth import client_required
+from src.apps.auth import client as client_app
+from src.apps.clients import vitrine as vitrine_app
+from src.apps.clients import cart as cart_app
+from src.apps.clients import favorites as fav_app
 
-def get_profile():
-    logger.info("rota: perfil do cliente")
-    return {}
-
-
-def update_profile():
-    logger.info("rota: atualizar perfil")
-    return {}
-
-
-def get_cart():
-    return {}
-
-
-def add_to_cart():
-    logger.info("rota: adicionar ao carrinho")
-    return {}
+router = APIRouter(prefix="/clients", tags=["clients"])
 
 
-def remove_from_cart():
-    logger.info("rota: remover do carrinho")
-    return {}
+# ── Perfil ──
+
+@router.get("/profile")
+async def get_profile(payload: dict = Depends(client_required)):
+    logger.info("GET /clients/profile")
+    return client_app.get_profile(user_id=payload["user_id"])
 
 
-def search_vitrine():
-    return {}
+@router.patch("/profile", response_model=SuccessResponse)
+async def update_profile(field: str, value: str, payload: dict = Depends(client_required)):
+    logger.info("PATCH /clients/profile")
+    return client_app.update_field(user_id=payload["user_id"], field=field, value=value)
 
 
-def list_by_category():
-    return {}
+# ── Carrinho ──
+
+@router.get("/cart")
+async def get_cart(payload: dict = Depends(client_required)):
+    logger.info("GET /clients/cart")
+    return cart_app.get_cart(client_id=payload["user_id"])
 
 
-def list_by_merchant():
-    return {}
+@router.post("/cart/add")
+async def add_to_cart(body: CartAddRequest, payload: dict = Depends(client_required)):
+    logger.info("POST /clients/cart/add")
+    return cart_app.add_to_cart(
+        client_id=payload["user_id"],
+        product_id=body.product_id,
+        merchant_id=body.merchant_id,
+        quantidade=body.quantidade,
+        acompanhamentos=body.acompanhamentos,
+        obs=body.obs,
+    )
 
 
-def list_ordens():
-    return {}
+@router.post("/cart/remove")
+async def remove_from_cart(body: CartRemoveRequest, payload: dict = Depends(client_required)):
+    logger.info("POST /clients/cart/remove")
+    return cart_app.remove_from_cart(client_id=payload["user_id"], product_id=body.product_id)
 
 
-def create_ordem():
-    logger.info("rota: criar ordem")
-    return {}
+@router.patch("/cart/qty")
+async def update_qty(body: CartQtyRequest, payload: dict = Depends(client_required)):
+    logger.info("PATCH /clients/cart/qty")
+    return cart_app.update_quantity(client_id=payload["user_id"], product_id=body.product_id, quantidade=body.quantidade)
 
 
-def get_ordem():
-    return {}
+@router.patch("/cart/obs")
+async def update_obs(body: CartObsRequest, payload: dict = Depends(client_required)):
+    logger.info("PATCH /clients/cart/obs")
+    return cart_app.update_obs(client_id=payload["user_id"], product_id=body.product_id, obs=body.obs)
 
 
-def cancel_ordem():
-    logger.info("rota: cancelar ordem")
-    return {}
+@router.post("/cart/clear")
+async def clear_cart(payload: dict = Depends(client_required)):
+    logger.info("POST /clients/cart/clear")
+    return cart_app.clear_cart(client_id=payload["user_id"])
 
 
-def rate_ordem():
-    logger.info("rota: avaliar ordem")
-    return {}
+@router.get("/cart/totals")
+async def calc_totals(payload: dict = Depends(client_required)):
+    logger.info("GET /clients/cart/totals")
+    return cart_app.calc_cart_totals(client_id=payload["user_id"])
 
 
-def get_favorites():
-    return {}
+# ── Vitrine ──
+
+@router.get("/vitrine/categories")
+async def list_categories(payload: dict = Depends(client_required)):
+    logger.info("GET /clients/vitrine/categories")
+    return vitrine_app.list_categories()
 
 
-def add_favorite():
-    logger.info("rota: adicionar favorito")
-    return {}
+@router.get("/vitrine/category/{categoria}")
+async def list_by_category(categoria: str, payload: dict = Depends(client_required)):
+    logger.info("GET /clients/vitrine/category/{cat}", cat=categoria)
+    return vitrine_app.list_by_category(categoria=categoria)
 
 
-def remove_favorite():
-    logger.info("rota: remover favorito")
-    return {}
+@router.get("/vitrine/search")
+async def search_vitrine(query: str = Query(..., min_length=1), payload: dict = Depends(client_required)):
+    logger.info("GET /clients/vitrine/search?q={q}", q=query)
+    return vitrine_app.search(query=query)
 
 
-def get_balance():
-    return {}
+@router.get("/vitrine/merchant/{merchant_id}")
+async def list_by_merchant(merchant_id: str, payload: dict = Depends(client_required)):
+    logger.info("GET /clients/vitrine/merchant/{mid}", mid=merchant_id)
+    return vitrine_app.list_by_merchant(merchant_id=merchant_id)
 
 
-def recharge():
-    logger.info("rota: recarga")
-    return {}
+@router.get("/vitrine/open")
+async def list_open_merchants(payload: dict = Depends(client_required)):
+    logger.info("GET /clients/vitrine/open")
+    return vitrine_app.list_open_merchants()
 
 
-def get_history():
-    return {}
+@router.get("/vitrine/product/{product_id}")
+async def get_product(product_id: str, payload: dict = Depends(client_required)):
+    logger.info("GET /clients/vitrine/product/{pid}", pid=product_id)
+    return vitrine_app.get_product(product_id=product_id)
 
 
-def get_comprovantes():
-    return {}
+# ── Favoritos ──
+
+@router.get("/favorites")
+async def get_favorites(payload: dict = Depends(client_required)):
+    logger.info("GET /clients/favorites")
+    return fav_app.list_favorites(client_id=payload["user_id"])
 
 
-def get_notifications():
-    return {}
+@router.post("/favorites/{merchant_id}", response_model=FavoriteResponse, status_code=status.HTTP_201_CREATED)
+async def add_favorite(merchant_id: str, payload: dict = Depends(client_required)):
+    logger.info("POST /clients/favorites/{mid}", mid=merchant_id)
+    return fav_app.add_favorite(client_id=payload["user_id"], merchant_id=merchant_id)
+
+
+@router.delete("/favorites/{merchant_id}", response_model=FavoriteResponse)
+async def remove_favorite(merchant_id: str, payload: dict = Depends(client_required)):
+    logger.info("DELETE /clients/favorites/{mid}", mid=merchant_id)
+    return fav_app.remove_favorite(client_id=payload["user_id"], merchant_id=merchant_id)
