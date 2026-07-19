@@ -1,0 +1,8 @@
+portunus-sdk
+python-dotenv
+fastapi
+uvicorn
+apex-taskflow
+bcrypt
+PyJWT
+loguru
