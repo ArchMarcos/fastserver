@@ -3,9 +3,13 @@
 
 Uso:
     python setup_db.py
+    python setup_db.py --reset   # recria tudo (apaga dados)
 
-Idempotente: não recria se já existir.
+Idempotente: não recria tabelas que já existem (a menos que --reset).
 """
+
+import argparse
+import sys
 
 from portunus import Client
 from loguru import logger
@@ -35,33 +39,69 @@ TABLES = [
 
 
 def main():
-    logger.info("conectando ao servidor {host}", host=settings.DATABASE_HOST)
-    db = Client(
-        settings.DATABASE_HOST,
-        user=settings.DATABASE_USER,
-        password=settings.DATABASE_PASSWORD,
-    )
+    parser = argparse.ArgumentParser(description="Cria banco e tabelas do FastDelivery")
+    parser.add_argument("--reset", action="store_true", help="Recria tudo (⚠️ apaga dados)")
+    args = parser.parse_args()
 
-    # --- Database ---
+    # ── Conectar ──
+    logger.info("Conectando ao PortunusDB em {host}", host=settings.DATABASE_HOST)
+
+    try:
+        db = Client(
+            settings.DATABASE_HOST,
+            user=settings.DATABASE_USER,
+            password=settings.DATABASE_PASSWORD,
+        )
+    except Exception as e:
+        logger.error("Falha ao conectar ao PortunusDB: {err}", err=e)
+        logger.error("Verifique se o servidor está rodando: portunusd --port 3100")
+        sys.exit(1)
+
+    # ── Reset ──
+    if args.reset:
+        dbs = db.list_databases()
+        if DB_NAME in dbs:
+            logger.warning("🗑️  Removendo banco '{db}'...", db=DB_NAME)
+            try:
+                db.delete_database(DB_NAME)
+            except Exception:
+                logger.warning("Falha ao deletar banco (pode não existir)")
+
+    # ── Database ──
     dbs = db.list_databases()
     if DB_NAME in dbs:
-        logger.info("banco '{db}' já existe", db=DB_NAME)
+        logger.info("Banco '{db}' já existe", db=DB_NAME)
     else:
         db.create_database(DB_NAME)
-        logger.info("banco '{db}' criado", db=DB_NAME)
+        logger.info("✅ Banco '{db}' criado", db=DB_NAME)
 
-    # --- Tables ---
+    # ── Tables ──
     db.use(DB_NAME)
-    existing = db.list_tables()
+    existing = set(db.list_tables())
+
+    created = 0
+    skipped = 0
 
     for table in TABLES:
         if table in existing:
-            logger.info("tabela '{table}' já existe", table=table)
+            logger.debug("  ⏭️  {table} (já existe)", table=table)
+            skipped += 1
         else:
             db.create_table(table)
-            logger.info("tabela '{table}' criada", table=table)
+            logger.info("  ✅ {table} criada", table=table)
+            created += 1
 
-    logger.info("setup concluído — {total} tabelas disponíveis", total=len(TABLES))
+    # ── Resumo ──
+    total = len(TABLES)
+    logger.info(
+        "Setup concluído — {created} criadas, {skipped} existentes, {total} total",
+        created=created,
+        skipped=skipped,
+        total=total,
+    )
+
+    if created == 0 and not args.reset:
+        logger.info("💡 Use --reset para recriar tudo")
 
 
 if __name__ == "__main__":
