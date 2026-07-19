@@ -1,0 +1,74 @@
+# ── FastDelivery — Docker Compose ──
+# Uso:
+#   docker compose up -d              (produção)
+#   docker compose up --build         (reconstruir)
+#   docker compose logs -f            (ver logs)
+#   docker compose down               (parar)
+
+version: "3.8"
+
+services:
+  api:
+    build: .
+    container_name: fastdelivery-api
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-3101}:3101"
+    environment:
+      # ── Database ──
+      - DATABASE_HOST=${DATABASE_HOST:-http://portunus:3100}
+      - DATABASE_USER=${DATABASE_USER:-root}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD:-0077}
+      - DATABASE_NAME=${DATABASE_NAME:-FD2}
+
+      # ── JWT ──
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - JWT_ACCESS_EXPIRE_MINUTES=${JWT_ACCESS_EXPIRE_MINUTES:-60}
+      - JWT_EMAIL_EXPIRE_MINUTES=${JWT_EMAIL_EXPIRE_MINUTES:-60}
+
+      # ── Server ──
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=3101
+      - DEBUG=${DEBUG:-false}
+
+      # ── Email ──
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM=${SMTP_FROM:-noreply@fastdelivery.com}
+
+      # ── Platform ──
+      - PLATFORM_TAX=${PLATFORM_TAX:-0.05}
+      - PLATFORM_NAME=${PLATFORM_NAME:-FastDelivery}
+
+      # ── Logging ──
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_FILE=logs/app.log
+
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - fastdelivery
+
+  # ── PortunusDB (opcional — remova se já tiver um externo) ──
+  # portunus:
+  #   build:
+  #     context: /tmp/portunus
+  #     dockerfile: Dockerfile  # você precisa criar este
+  #   container_name: fastdelivery-db
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3100:3100"
+  #   volumes:
+  #     - portunus_data:/data
+  #   networks:
+  #     - fastdelivery
+
+networks:
+  fastdelivery:
+    driver: bridge
+
+# volumes:
+#   portunus_data:

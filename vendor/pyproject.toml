@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "portunus-sdk"
+version = "0.1.0"
+description = "Minimalist, zero-dependency Python SDK for PortunusDB"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Marcos" }]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/mgg/portunus-sdk"
+
+[tool.setuptools.packages.find]
+include = ["portunus*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
