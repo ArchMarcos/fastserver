@@ -105,12 +105,12 @@ def confirm_email(token):
 
     user_id = payload["sub"]
 
-    records = email_confirmations.find(user_id=user_id)
-    if not records:
+    record = email_confirmations.first(user_id=user_id)
+    if not record:
         raise NotFoundError("Nenhuma solicitação de confirmação encontrada")
 
     drivers.update({"email_confirmed": True}, id=user_id)
-    email_confirmations.delete(user_id=user_id)
+    email_confirmations.delete(id=record["id"])
 
     user_d = deserialize(drivers.get(user_id))
     email_notif.send_welcome(user_d.get("email", ""), user_d.get("name", ""))

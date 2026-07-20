@@ -108,12 +108,12 @@ def confirm_email(token):
 
     user_id = payload["sub"]
 
-    records = email_confirmations.find(user_id=user_id)
-    if not records:
+    record = email_confirmations.first(user_id=user_id)
+    if not record:
         raise NotFoundError("Nenhuma solicitação de confirmação encontrada")
 
     clients.update({"email_confirmed": True}, id=user_id)
-    email_confirmations.delete(user_id=user_id)
+    email_confirmations.delete(id=record["id"])  # deleta pelo id do registro, não user_id
 
     # Notificações pós-confirmação
     user = deserialize(clients.get(user_id))
