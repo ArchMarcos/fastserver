@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro — FastDelivery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#f0f8ff",100:"#ddf0fc",200:"#b8e0f9",300:"#7cb9e8",400:"#5ba0d4",500:"#3b87bf",600:"#2a6ea3",700:"#1f5582",800:"#1a3d61",900:"#152a45" }
+          },
+          fontFamily: { sans: ['"Inter"',"system-ui","sans-serif"] }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg" />
+</head>
+<body class="bg-[#F5FAFD] font-sans min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-md">
+  <a href="/" class="flex items-center justify-center gap-3 mb-8">
+    <img src="/assets/images/logo.svg" alt="FastDelivery" class="h-10 w-10" />
+    <span class="text-2xl font-extrabold text-brand-600">Fast<span class="text-gray-800">Delivery</span></span>
+  </a>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-brand-100 p-8">
+
+    <!-- ============ TABS ============ -->
+    <div id="tabs" class="flex border-b border-gray-100 mb-6">
+      <button type="button" id="tab-client"
+        class="tab-btn active flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors"
+        data-role="client">🍕 Cliente</button>
+      <button type="button" id="tab-merchant"
+        class="tab-btn flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors"
+        data-role="merchant">👨‍🍳 Restaurante</button>
+      <button type="button" id="tab-driver"
+        class="tab-btn flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors"
+        data-role="driver">🏍️ Entregador</button>
+    </div>
+
+    <!-- ============ FORM ============ -->
+    <form id="form" class="space-y-4">
+
+      <!-- Nome (label muda por role) -->
+      <div>
+        <label id="lbl-name" for="name" class="block text-sm font-medium text-gray-700 mb-1.5">Nome completo</label>
+        <input type="text" id="name" required minlength="2"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="Seu nome" />
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
+        <input type="email" id="email" required
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="seu@email.com" />
+      </div>
+
+      <!-- Telefone -->
+      <div>
+        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>
+        <input type="tel" id="phone" required minlength="8"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="(11) 99999-9999" />
+      </div>
+
+      <!-- Endereço via mapa -->
+      <input type="hidden" id="address" />
+      <input type="hidden" id="lat" />
+      <input type="hidden" id="lng" />
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1.5">Endereço 📍</label>
+        <button type="button" id="btn-map"
+          class="w-full flex flex-col items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-brand-200 hover:border-brand-300 bg-brand-50/50 hover:bg-brand-50 text-brand-600 transition-all group">
+          <span class="text-2xl group-hover:scale-110 transition-transform">📍</span>
+          <span id="btn-map-text" class="text-sm font-semibold">Clique para escolher no mapa</span>
+          <span id="map-coords" class="hidden text-xs text-gray-400 font-mono"></span>
+        </button>
+        <p id="map-confirm" class="hidden text-xs text-emerald-600 font-medium mt-1 ml-1">✅ Endereço definido — pode clicar novamente para ajustar</p>
+      </div>
+
+      <!-- ===== MERCHANT ONLY ===== -->
+      <div id="row-logo" class="hidden">
+        <label for="logo_url" class="block text-sm font-medium text-gray-700 mb-1.5">Logo URL <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <input type="url" id="logo_url"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="https://..." />
+      </div>
+      <div id="row-hours" class="hidden">
+        <label for="opening_hours" class="block text-sm font-medium text-gray-700 mb-1.5">Horário de funcionamento <span class="text-gray-400 font-normal">(opcional)</span></label>
+        <input type="text" id="opening_hours"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="Seg-Sex 08h-22h, Sáb-Dom 09h-22h" />
+      </div>
+
+      <!-- ===== DRIVER ONLY ===== -->
+      <div id="row-veiculo" class="hidden">
+        <label for="veiculo" class="block text-sm font-medium text-gray-700 mb-1.5">Veículo</label>
+        <select id="veiculo"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm bg-white">
+          <option value="moto">🏍️ Moto</option>
+          <option value="bicycle">🚲 Bicicleta</option>
+          <option value="car">🚗 Carro</option>
+        </select>
+      </div>
+
+      <!-- Senha -->
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
+        <input type="password" id="password" required minlength="6"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="Mínimo 6 caracteres" />
+      </div>
+
+      <!-- Messages -->
+      <div id="msg-error" class="hidden text-red-500 text-sm font-medium p-3 bg-red-50 rounded-xl"></div>
+      <div id="msg-ok" class="hidden text-emerald-600 text-sm font-medium p-3 bg-emerald-50 rounded-xl"></div>
+
+      <button type="submit" id="btn-submit"
+        class="w-full bg-brand-300 hover:bg-brand-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md">
+        Criar conta
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-gray-400">
+      Já tem conta? <a href="/auth/login.html" class="text-brand-400 hover:text-brand-500 font-semibold">Entrar</a>
+    </p>
+  </div>
+</div>
+
+<!-- ============ SCRIPT AUTOSSUFICIENTE ============ -->
+<script>
+// ── Config por role ──────────────────────────────────
+var CFG = {
+  client: {
+    nameLabel: "Nome completo",
+    namePh:    "Seu nome",
+    btn:       "Criar conta"
+  },
+  merchant: {
+    nameLabel: "Nome do restaurante",
+    namePh:    "Nome do seu restaurante",
+    btn:       "Cadastrar restaurante"
+  },
+  driver: {
+    nameLabel: "Nome completo",
+    namePh:    "Seu nome",
+    btn:       "Cadastrar entregador"
+  }
+};
+
+var currentRole = "client";
+
+// ── DOM refs ─────────────────────────────────────────
+var tabs    = document.querySelectorAll(".tab-btn");
+var form    = document.getElementById("form");
+var lblName = document.getElementById("lbl-name");
+var inpName = document.getElementById("name");
+var btnSub  = document.getElementById("btn-submit");
+var msgErr  = document.getElementById("msg-error");
+var msgOk   = document.getElementById("msg-ok");
+
+var rowLogo   = document.getElementById("row-logo");
+var rowHours  = document.getElementById("row-hours");
+var rowVeiculo = document.getElementById("row-veiculo");
+
+// ── Mapa ─────────────────────────────────────────────
+var btnMap     = document.getElementById("btn-map");
+var btnMapText = document.getElementById("btn-map-text");
+var mapCoords  = document.getElementById("map-coords");
+var inpAddr    = document.getElementById("address");
+var inpLat     = document.getElementById("lat");
+var inpLng     = document.getElementById("lng");
+var mapConfirmEl = document.getElementById("map-confirm");
+
+// Callback chamado pelo popup do mapa
+window.setLocation = function(lat, lng) {
+  inpLat.value = lat;
+  inpLng.value = lng;
+  mapCoords.textContent = lat + ", " + lng;
+  mapCoords.classList.remove("hidden");
+  mapConfirmEl.classList.remove("hidden");
+
+  // Reverse geocode → endereço legível
+  fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lng + "&accept-language=pt-BR")
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var addr = d.display_name || (d.address ? [d.address.road, d.address.city, d.address.state].filter(Boolean).join(", ") : "");
+      if (addr) {
+        inpAddr.value = addr;
+        btnMapText.textContent = addr.length > 60 ? addr.substring(0, 57) + "..." : addr;
+      } else {
+        inpAddr.value = lat + ", " + lng;
+        btnMapText.textContent = lat + ", " + lng;
+      }
+    })
+    .catch(function() {
+      inpAddr.value = lat + ", " + lng;
+      btnMapText.textContent = lat + ", " + lng;
+    });
+};
+
+btnMap.addEventListener("click", function() {
+  var w = Math.min(500, screen.width - 40);
+  var h = Math.min(700, screen.height - 80);
+  var left = (screen.width - w) / 2;
+  var top  = (screen.height - h) / 2;
+  window.open(
+    "/location.html" + (inpLat.value ? "?lat=" + inpLat.value + "&lng=" + inpLng.value : ""),
+    "pickLocation",
+    "width=" + w + ",height=" + h + ",left=" + left + ",top=" + top
+  );
+});
+
+// ── Tab styles ───────────────────────────────────────
+var ACTIVE = ["text-brand-400","border-brand-300"];
+var IDLE   = ["text-gray-400","border-transparent"];
+
+function setTabStyle(btn, active) {
+  if (active) {
+    btn.classList.remove.apply(btn.classList, IDLE);
+    btn.classList.add.apply(btn.classList, ACTIVE);
+  } else {
+    btn.classList.remove.apply(btn.classList, ACTIVE);
+    btn.classList.add.apply(btn.classList, IDLE);
+  }
+}
+
+// ── Switch role ──────────────────────────────────────
+function showExtras(logo, hours, veiculo) {
+  rowLogo.classList.toggle("hidden", !logo);
+  rowHours.classList.toggle("hidden", !hours);
+  rowVeiculo.classList.toggle("hidden", !veiculo);
+}
+
+function switchRole(role) {
+  currentRole = role;
+  var c = CFG[role];
+
+  lblName.textContent  = c.nameLabel;
+  inpName.placeholder  = c.namePh;
+  btnSub.textContent   = c.btn;
+
+  // Simples e direto: quem mostra o quê
+  if (role === "client")   showExtras(false, false, false);
+  if (role === "merchant") showExtras(true,  true,  false);
+  if (role === "driver")   showExtras(false, false, true);
+}
+
+// ── Tab click handlers ───────────────────────────────
+tabs.forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    tabs.forEach(function(t) { setTabStyle(t, false); });
+    setTabStyle(btn, true);
+    switchRole(btn.dataset.role);
+    msgErr.classList.add("hidden");
+    msgOk.classList.add("hidden");
+  });
+});
+
+// ── ?role= query param ───────────────────────────────
+(function() {
+  var m = location.search.match(/role=(client|merchant|driver)/);
+  if (m) {
+    var target = document.getElementById("tab-" + m[1]);
+    if (target) target.click();
+  }
+})();
+
+// ── Submit ───────────────────────────────────────────
+form.addEventListener("submit", function(e) {
+  e.preventDefault();
+  msgErr.classList.add("hidden");
+  msgOk.classList.add("hidden");
+
+  btnSub.disabled = true;
+  btnSub.textContent = "Cadastrando...";
+
+  // Validação manual do endereço (campo hidden)
+  if (!inpAddr.value || inpAddr.value.length < 3) {
+    msgErr.textContent = "Escolha seu endereço no mapa antes de continuar";
+    msgErr.classList.remove("hidden");
+    btnSub.disabled = false;
+    btnSub.textContent = CFG[currentRole].btn;
+    return;
+  }
+
+  var payload = {
+    name:     inpName.value,
+    email:    document.getElementById("email").value,
+    phone:    document.getElementById("phone").value,
+    address:  inpAddr.value,
+    password: document.getElementById("password").value,
+    lat:      inpLat.value || null,
+    lng:      inpLng.value || null
+  };
+
+  if (currentRole === "merchant") {
+    payload.logo_url      = document.getElementById("logo_url").value;
+    payload.opening_hours = document.getElementById("opening_hours").value;
+  }
+  if (currentRole === "driver") {
+    payload.veiculo = document.getElementById("veiculo").value;
+  }
+
+  fetch("/auth/register/" + currentRole, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(function(r) { return r.json().then(function(d) { return {ok:r.ok, data:d}; }); })
+  .then(function(r) {
+    if (!r.ok) throw new Error(r.data.detail || r.data.message || "Erro ao cadastrar");
+    msgOk.textContent = r.data.message;
+    msgOk.classList.remove("hidden");
+    btnSub.textContent = "Redirecionando...";
+    setTimeout(function() { location.href = "/auth/login.html"; }, 1500);
+  })
+  .catch(function(err) {
+    msgErr.textContent = err.message;
+    msgErr.classList.remove("hidden");
+    btnSub.disabled = false;
+    btnSub.textContent = CFG[currentRole].btn;
+  });
+});
+</script>
+
+</body>
+</html>

@@ -127,7 +127,7 @@ def send_email(to, subject, body, html=True):
 
 
 def send_confirmation(email, name, token):
-    link = f"{APP_URL}/confirm?token={token}"
+    link = f"{APP_URL}/auth/confirm-email?token={token}"
     content = (
         f'<p style="margin-top:0">Olá <strong>{name}</strong>,</p>'
         f"<p>Seja bem-vindo(a) ao <strong>{settings.PLATFORM_NAME}</strong>! "

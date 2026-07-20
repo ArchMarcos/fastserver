@@ -1,7 +1,9 @@
 # Rotas de autenticação — FastAPI Router
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import HTMLResponse
 from loguru import logger
 
+from src.infra.errors import ValidationError
 from src.schemas.auth import (
     RegisterClientRequest,
     RegisterMerchantRequest,
@@ -20,6 +22,52 @@ from src.apps.auth import driver as driver_app
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+# ========== CONFIRMAÇÃO UNIFICADA (via link do email) ==========
+
+@router.get("/confirm-email")
+async def confirm_email_get(token: str):
+    """Confirmação via link de email (GET). Auto-detecta a role e retorna HTML."""
+    logger.info("GET /auth/confirm-email")
+    from src.database.database import clients, merchants, drivers
+    from src.utils.tokens import decode_email_token
+
+    try:
+        payload = decode_email_token(token)
+    except Exception:
+        return HTMLResponse(_confirm_html("Token inválido", "O link de confirmação expirou ou é inválido.", False))
+
+    user_id = payload["sub"]
+
+    for col, app, role in [
+        (clients, client_app, "client"),
+        (merchants, merchant_app, "merchant"),
+        (drivers, driver_app, "driver"),
+    ]:
+        try:
+            col.get(user_id)
+            app.confirm_email(token)
+            return HTMLResponse(_confirm_html("E-mail confirmado! 🎉", f"Sua conta como <strong>{role}</strong> está ativa. Volte ao app e faça login.", True))
+        except Exception:
+            continue
+
+    return HTMLResponse(_confirm_html("Usuário não encontrado", "Não foi possível identificar sua conta.", False))
+
+
+def _confirm_html(title: str, message: str, success: bool) -> str:
+    color = "#7CB9E8" if success else "#ef4444"
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{title}</title>
+<style>body{{font-family:'Inter',system-ui,sans-serif;background:#F5FAFD;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}}</style>
+</head><body>
+<div style="background:white;border-radius:16px;padding:48px 32px;text-align:center;max-width:420px;box-shadow:0 2px 12px rgba(0,0,0,0.06)">
+<div style="font-size:48px;margin-bottom:16px">{"✅" if success else "❌"}</div>
+<h1 style="margin:0 0 8px;font-size:22px;color:{color}">{title}</h1>
+<p style="color:#555;line-height:1.6;margin:16px 0 24px">{message}</p>
+<a href="/auth/login.html" style="display:inline-block;padding:14px 36px;background:{color};color:white;text-decoration:none;border-radius:10px;font-weight:600;font-size:14px">Ir para o login</a>
+</div></body></html>"""
+
+
 # ========== CLIENTE ==========
 
 @router.post("/register/client", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
@@ -31,6 +79,8 @@ async def register_client(body: RegisterClientRequest):
         phone=body.phone,
         password=body.password,
         address=body.address,
+        lat=body.lat,
+        lng=body.lng,
     )
 
 
@@ -44,6 +94,18 @@ async def login_client(body: LoginRequest):
 async def confirm_email_client(body: ConfirmEmailRequest):
     logger.info("POST /auth/confirm-email/client")
     return client_app.confirm_email(token=body.token)
+
+
+@router.post("/resend-confirmation/public", response_model=SuccessResponse)
+async def resend_confirmation_public(body: dict):
+    """Reenvia email de confirmação sem autenticação (para usuários que não conseguem logar)."""
+    logger.info("POST /auth/resend-confirmation/public")
+    email = body.get("email", "")
+    role = body.get("role", "")
+    if not email or role not in ("client", "merchant", "driver"):
+        raise ValidationError("Email e role são obrigatórios")
+    apps = {"client": client_app, "merchant": merchant_app, "driver": driver_app}
+    return apps[role].resend_confirmation_by_email(email)
 
 
 @router.post("/resend-confirmation/client", response_model=SuccessResponse)
@@ -75,6 +137,8 @@ async def register_merchant(body: RegisterMerchantRequest):
         phone=body.phone,
         password=body.password,
         address=body.address,
+        lat=body.lat,
+        lng=body.lng,
     )
 
 
@@ -120,6 +184,8 @@ async def register_driver(body: RegisterDriverRequest):
         password=body.password,
         address=body.address,
         veiculo=body.veiculo,
+        lat=body.lat,
+        lng=body.lng,
     )
 
 

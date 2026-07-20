@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Escolher Localização — FastDelivery</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#f0f8ff",100:"#ddf0fc",200:"#b8e0f9",300:"#7cb9e8",400:"#5ba0d4",500:"#3b87bf",600:"#2a6ea3",700:"#1f5582",800:"#1a3d61",900:"#152a45" }
+          },
+          fontFamily: { sans: ['"Inter"',"system-ui","sans-serif"] }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    #map { flex: 1; width: 100%; }
+    .leaflet-control-zoom {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+      border-radius: 10px !important; overflow: hidden; border: none !important;
+    }
+    .leaflet-control-zoom a {
+      border-radius: 0 !important; width: 36px !important; height: 36px !important;
+      line-height: 36px !important; font-size: 18px !important; color: #555 !important;
+    }
+    .pin-pulse {
+      animation: pinPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pinPulse {
+      0%, 100% { transform: translate(-50%,-100%) scale(1); }
+      50%      { transform: translate(-50%,-100%) scale(1.12); }
+    }
+    .search-spin {
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-white font-sans h-full flex flex-col">
+
+  <!-- ===== HEADER ===== -->
+  <header class="shrink-0 bg-white border-b border-gray-100 px-5 h-14 flex items-center justify-between relative z-50">
+    <a href="/" class="flex items-center gap-2.5 shrink-0">
+      <img src="/assets/images/logo.svg" alt="FastDelivery" class="h-7 w-7" />
+      <span class="text-base font-extrabold text-brand-600">Fast<span class="text-gray-800">Delivery</span></span>
+    </a>
+    <!-- Busca inline -->
+    <div class="relative flex items-center gap-1 flex-1 max-w-md ml-6" id="search-container">
+      <div class="relative flex-1">
+        <input type="text" id="search-input"
+          class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm bg-gray-50"
+          placeholder="Buscar endereço..." />
+        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">🔍</span>
+      </div>
+      <button type="button" id="search-btn"
+        class="shrink-0 bg-brand-300 hover:bg-brand-400 text-white w-9 h-9 rounded-xl flex items-center justify-center transition-all shadow-sm hover:shadow-md text-sm"
+        title="Buscar">🔍</button>
+    </div>
+  </header>
+
+  <!-- ===== MAPA ===== -->
+  <div id="map"></div>
+
+  <!-- ===== PAINEL INFERIOR ===== -->
+  <div class="shrink-0 bg-white border-t border-gray-100 px-5 py-3">
+    <div class="max-w-lg mx-auto flex items-center gap-3 flex-wrap">
+      <!-- Toggle mapa/satélite -->
+      <div class="flex bg-gray-100 rounded-xl p-0.5 shrink-0">
+        <button type="button" id="layer-rua"
+          class="layer-btn px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all bg-white text-gray-800 shadow-sm">
+          🗺️
+        </button>
+        <button type="button" id="layer-satelite"
+          class="layer-btn px-3 py-1.5 rounded-[10px] text-xs font-semibold transition-all text-gray-400 hover:text-gray-600">
+          🛰️
+        </button>
+      </div>
+      <!-- Coordenadas -->
+      <div class="flex-1 flex items-center gap-2 min-w-0">
+        <div class="flex items-center gap-1 bg-gray-50 rounded-lg px-2.5 py-1.5 flex-1 min-w-0">
+          <span class="text-[9px] text-gray-400 uppercase tracking-wider font-medium shrink-0">Lat</span>
+          <span id="display-lat" class="text-xs font-bold text-gray-800 font-mono tabular-nums truncate">-10.0748</span>
+        </div>
+        <div class="flex items-center gap-1 bg-gray-50 rounded-lg px-2.5 py-1.5 flex-1 min-w-0">
+          <span class="text-[9px] text-gray-400 uppercase tracking-wider font-medium shrink-0">Lng</span>
+          <span id="display-lng" class="text-xs font-bold text-gray-800 font-mono tabular-nums truncate">-67.0534</span>
+        </div>
+      </div>
+      <!-- Confirmar -->
+      <button type="button" id="confirm-btn"
+        class="shrink-0 bg-brand-300 hover:bg-brand-400 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-sm hover:shadow-md text-xs">
+        ✅ Confirmar
+      </button>
+    </div>
+  </div>
+
+  <!-- Dropdown de busca (filho do body → sempre acima do mapa) -->
+  <div id="search-results" class="hidden fixed bg-white rounded-2xl shadow-xl border border-gray-100 max-h-56 overflow-y-auto" style="z-index: 9999;"></div>
+
+  <!-- ===== SCRIPTS ===== -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+  var DEFAULT_LAT  = -10.0748;
+  var DEFAULT_LNG  = -67.0534;
+  var DEFAULT_ZOOM = 15;
+
+  var params = new URLSearchParams(location.search);
+  var initLat = parseFloat(params.get("lat")) || DEFAULT_LAT;
+  var initLng = parseFloat(params.get("lng")) || DEFAULT_LNG;
+
+  // ── Mapa ───────────────────────────────────────────
+  var map = L.map("map", {
+    center: [initLat, initLng],
+    zoom: DEFAULT_ZOOM,
+    zoomControl: true
+  }).invalidateSize();
+
+  // Layers
+  var layerRua = L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    maxZoom: 19
+  });
+
+  var layerSat = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+    attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+    maxZoom: 22,
+    maxNativeZoom: 17   // escala o último tile real em vez de mostrar erro
+  });
+
+  layerRua.addTo(map);
+  var currentLayer = "rua";
+
+  // Toggle layers
+  var btnRua = document.getElementById("layer-rua");
+  var btnSat = document.getElementById("layer-satelite");
+
+  function setLayer(layer) {
+    currentLayer = layer;
+    if (layer === "rua") {
+      map.removeLayer(layerSat);
+      map.addLayer(layerRua);
+      btnRua.classList.add("bg-white", "text-gray-800", "shadow-sm");
+      btnRua.classList.remove("text-gray-400");
+      btnSat.classList.remove("bg-white", "text-gray-800", "shadow-sm");
+      btnSat.classList.add("text-gray-400");
+    } else {
+      map.removeLayer(layerRua);
+      map.addLayer(layerSat);
+      btnSat.classList.add("bg-white", "text-gray-800", "shadow-sm");
+      btnSat.classList.remove("text-gray-400");
+      btnRua.classList.remove("bg-white", "text-gray-800", "shadow-sm");
+      btnRua.classList.add("text-gray-400");
+    }
+  }
+
+  btnRua.addEventListener("click", function() { setLayer("rua"); });
+  btnSat.addEventListener("click", function() { setLayer("sat"); });
+
+  // ── Ícone ──────────────────────────────────────────
+  var pinIcon = L.divIcon({
+    className: "pin-pulse",
+    html: '<svg width="36" height="48" viewBox="0 0 40 52" fill="none">'
+        + '<path d="M20 0C8.954 0 0 8.954 0 20c0 15 20 32 20 32s20-17 20-32C40 8.954 31.046 0 20 0z" fill="#7CB9E8" stroke="#2a6ea3" stroke-width="2"/>'
+        + '<circle cx="20" cy="20" r="7" fill="white"/>'
+        + '</svg>',
+    iconSize: [36, 48],
+    iconAnchor: [18, 48],
+    popupAnchor: [0, -48]
+  });
+
+  var marker = L.marker([initLat, initLng], { icon: pinIcon, draggable: true }).addTo(map);
+
+  var dLat = document.getElementById("display-lat");
+  var dLng = document.getElementById("display-lng");
+
+  function updateCoords(lat, lng) {
+    dLat.textContent = lat.toFixed(4);
+    dLng.textContent = lng.toFixed(4);
+  }
+
+  marker.on("dragend", function() {
+    var pos = marker.getLatLng();
+    updateCoords(pos.lat, pos.lng);
+  });
+
+  map.on("click", function(e) {
+    marker.setLatLng(e.latlng);
+    updateCoords(e.latlng.lat, e.latlng.lng);
+  });
+
+  // Ajusta tamanho do mapa
+  setTimeout(function() { map.invalidateSize(); }, 100);
+
+  // ── Busca ──────────────────────────────────────────
+  var searchInput     = document.getElementById("search-input");
+  var searchBtn       = document.getElementById("search-btn");
+  var searchContainer = document.getElementById("search-container");
+  var resultsDiv      = document.getElementById("search-results");
+
+  // Posiciona dropdown abaixo do input
+  function positionResults() {
+    var rect = searchContainer.getBoundingClientRect();
+    resultsDiv.style.top  = (rect.bottom + 4) + "px";
+    resultsDiv.style.left = rect.left + "px";
+    resultsDiv.style.width = rect.width + "px";
+  }
+
+  function showResults() { positionResults(); resultsDiv.classList.remove("hidden"); }
+  function hideResults() { resultsDiv.classList.add("hidden"); }
+
+  // Re-posiciona ao redimensionar
+  window.addEventListener("resize", function() { if (!resultsDiv.classList.contains("hidden")) positionResults(); });
+  window.addEventListener("scroll", function() { if (!resultsDiv.classList.contains("hidden")) positionResults(); });
+
+  function doSearch() {
+    var q = searchInput.value.trim();
+    if (q.length >= 3) {
+      clearTimeout(searchTimer);
+      searchAddress(q);
+    }
+  }
+
+  searchBtn.addEventListener("click", doSearch);
+
+  function searchAddress(query) {
+    resultsDiv.innerHTML = '<div class="flex items-center gap-2 px-4 py-3 text-sm text-gray-400"><span class="search-spin inline-block w-4 h-4 border-2 border-gray-200 border-t-brand-300 rounded-full"></span> Buscando...</div>';
+    showResults();
+
+    fetch("https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=br&q=" + encodeURIComponent(query))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.length) {
+          resultsDiv.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Nenhum resultado para "' + query + '"</div>';
+          return;
+        }
+        resultsDiv.innerHTML = "";
+        data.forEach(function(item, i) {
+          var el = document.createElement("button");
+          el.type = "button";
+          el.className = "w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-brand-50 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2";
+          el.innerHTML = '<span class="text-gray-300 text-xs mt-0.5">📍</span><span>' + item.display_name.substring(0, 90) + '</span>';
+          el.addEventListener("click", function() {
+            var lat = parseFloat(item.lat);
+            var lng = parseFloat(item.lon);
+            marker.setLatLng([lat, lng]);
+            map.setView([lat, lng], 17);
+            updateCoords(lat, lng);
+            hideResults();
+            searchInput.value = item.display_name.substring(0, 60);
+            searchInput.blur();
+          });
+          resultsDiv.appendChild(el);
+        });
+      })
+      .catch(function() {
+        resultsDiv.innerHTML = '<div class="px-4 py-3 text-sm text-red-400">Erro ao buscar. Tente novamente.</div>';
+      });
+  }
+
+  var searchTimer;
+  searchInput.addEventListener("input", function() {
+    clearTimeout(searchTimer);
+    var q = searchInput.value.trim();
+    if (q.length >= 3) {
+      showResults();
+      searchTimer = setTimeout(function() { searchAddress(q); }, 400);
+    } else {
+      hideResults();
+    }
+  });
+
+  searchInput.addEventListener("focus", function() {
+    if (searchInput.value.trim().length >= 3) showResults();
+  });
+
+  document.addEventListener("click", function(e) {
+    if (!resultsDiv.contains(e.target) && e.target !== searchInput && e.target !== searchBtn) {
+      hideResults();
+    }
+  });
+
+  // ── Confirmar ──────────────────────────────────────
+  document.getElementById("confirm-btn").addEventListener("click", function() {
+    var pos = marker.getLatLng();
+    var lat = pos.lat.toFixed(6);
+    var lng = pos.lng.toFixed(6);
+
+    if (window.opener && window.opener.setLocation) {
+      window.opener.setLocation(lat, lng);
+      window.close();
+    } else {
+      var returnUrl = params.get("return") || "/";
+      var sep = returnUrl.indexOf("?") === -1 ? "?" : "&";
+      location.href = returnUrl + sep + "lat=" + lat + "&lng=" + lng;
+    }
+  });
+
+  updateCoords(initLat, initLng);
+  </script>
+
+</body>
+</html>

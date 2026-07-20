@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar — FastDelivery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#f0f8ff",100:"#ddf0fc",200:"#b8e0f9",300:"#7cb9e8",400:"#5ba0d4",500:"#3b87bf",600:"#2a6ea3",700:"#1f5582",800:"#1a3d61",900:"#152a45" }
+          },
+          fontFamily: { sans: ['"Inter"',"system-ui","sans-serif"] }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg" />
+</head>
+<body class="bg-[#F5FAFD] font-sans min-h-screen flex items-center justify-center p-4">
+
+<div class="w-full max-w-md">
+  <a href="/" class="flex items-center justify-center gap-3 mb-8">
+    <img src="/assets/images/logo.svg" alt="FastDelivery" class="h-10 w-10" />
+    <span class="text-2xl font-extrabold text-brand-600">Fast<span class="text-gray-800">Delivery</span></span>
+  </a>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-brand-100 p-8">
+
+    <!-- ============ TABS ============ -->
+    <div id="tabs" class="flex border-b border-gray-100 mb-6">
+      <button type="button" id="tab-client"
+        class="tab-btn active flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors"
+        data-role="client">🍕 Cliente</button>
+      <button type="button" id="tab-merchant"
+        class="tab-btn flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors"
+        data-role="merchant">👨‍🍳 Restaurante</button>
+      <button type="button" id="tab-driver"
+        class="tab-btn flex-1 pb-3 text-sm font-semibold border-b-2 transition-colors"
+        data-role="driver">🏍️ Entregador</button>
+    </div>
+
+    <!-- ============ FORM ============ -->
+    <form id="form" class="space-y-4">
+      <div>
+        <label for="ident" class="block text-sm font-medium text-gray-700 mb-1.5">E-mail ou telefone</label>
+        <input type="text" id="ident" required
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="seu@email.com" />
+      </div>
+      <div>
+        <label for="password" class="block text-sm font-medium text-gray-700 mb-1.5">Senha</label>
+        <input type="password" id="password" required minlength="6"
+          class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+          placeholder="••••••••" />
+      </div>
+
+      <div id="msg-error" class="hidden text-red-500 text-sm font-medium p-3 bg-red-50 rounded-xl"></div>
+
+      <button type="submit"
+        class="w-full bg-brand-300 hover:bg-brand-400 text-white font-bold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md">
+        Entrar
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-gray-400">
+      Ainda não tem conta?
+      <a id="link-register" href="/auth/register.html" class="text-brand-400 hover:text-brand-500 font-semibold">Cadastre-se</a>
+    </p>
+  </div>
+</div>
+
+<!-- ============ SCRIPT AUTOSSUFICIENTE ============ -->
+<script>
+var currentRole = "client";
+
+var tabs    = document.querySelectorAll(".tab-btn");
+var form    = document.getElementById("form");
+var msgErr  = document.getElementById("msg-error");
+var linkReg = document.getElementById("link-register");
+
+var ACTIVE = ["text-brand-400","border-brand-300"];
+var IDLE   = ["text-gray-400","border-transparent"];
+
+function setTabStyle(btn, active) {
+  if (active) {
+    btn.classList.remove.apply(btn.classList, IDLE);
+    btn.classList.add.apply(btn.classList, ACTIVE);
+  } else {
+    btn.classList.remove.apply(btn.classList, ACTIVE);
+    btn.classList.add.apply(btn.classList, IDLE);
+  }
+}
+
+// ── Tabs ─────────────────────────────────────────────
+tabs.forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    tabs.forEach(function(t) { setTabStyle(t, false); });
+    setTabStyle(btn, true);
+    currentRole = btn.dataset.role;
+    msgErr.classList.add("hidden");
+
+    // Atualiza link de cadastro
+    var map = {
+      client:   "/auth/register.html",
+      merchant: "/auth/register.html?role=merchant",
+      driver:   "/auth/register.html?role=driver"
+    };
+    linkReg.href = map[currentRole];
+  });
+});
+
+// ── ?role= query param ───────────────────────────────
+(function() {
+  var m = location.search.match(/role=(client|merchant|driver)/);
+  if (m) {
+    var target = document.getElementById("tab-" + m[1]);
+    if (target) target.click();
+  }
+})();
+
+// ── Submit ───────────────────────────────────────────
+form.addEventListener("submit", function(e) {
+  e.preventDefault();
+  msgErr.innerHTML = "";
+  msgErr.classList.add("hidden");
+
+  var btn = form.querySelector('button[type="submit"]');
+  var identVal = document.getElementById("ident").value;
+  btn.disabled = true;
+  btn.textContent = "Entrando...";
+
+  fetch("/auth/login/" + currentRole, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ident: identVal, password: document.getElementById("password").value })
+  })
+  .then(function(r) { return r.json().then(function(d) { return {ok:r.ok, data:d}; }); })
+  .then(function(r) {
+    if (!r.ok) {
+      var msg = r.data.detail || r.data.message || "Erro ao fazer login";
+      var err = new Error(msg);
+      err.isEmail = /não confirmado/i.test(msg);
+      throw err;
+    }
+
+    // Salva sessão
+    localStorage.setItem("fastdelivery_token", r.data.access_token);
+    localStorage.setItem("fastdelivery_user", JSON.stringify({
+      user_id: r.data.user_id, name: r.data.name, email: r.data.email, role: currentRole
+    }));
+
+    var dash = { client: "/client/dashboard.html", merchant: "/merchant/dashboard.html", driver: "/driver/dashboard.html" };
+    location.href = dash[currentRole];
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = "Entrar";
+
+    if (err.isEmail) {
+      // Mostra erro + botão de reenvio
+      msgErr.innerHTML = '<div class="flex items-start gap-2 mb-2"><span>⚠️</span><span>' + err.message + '</span></div>'
+        + '<button type="button" id="btn-resend" class="w-full bg-white border border-brand-300 text-brand-600 font-semibold py-2 rounded-xl text-sm hover:bg-brand-50 transition-all">📧 Reenviar e-mail de confirmação</button>';
+      msgErr.classList.remove("hidden");
+
+      document.getElementById("btn-resend").addEventListener("click", function() {
+        var btnResend = document.getElementById("btn-resend");
+        btnResend.disabled = true;
+        btnResend.textContent = "Enviando...";
+
+        fetch("/auth/resend-confirmation/public", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: identVal, role: currentRole })
+        })
+        .then(function(r) { return r.json().then(function(d) { return {ok:r.ok, data:d}; }); })
+        .then(function(r) {
+          if (!r.ok) throw new Error(r.data.detail || "Erro ao reenviar");
+          msgErr.innerHTML = '<div class="flex items-start gap-2"><span>✅</span><span>' + r.data.message + '</span></div>';
+        })
+        .catch(function(re) {
+          msgErr.innerHTML = '<div class="flex items-start gap-2"><span>❌</span><span>' + re.message + '</span></div>';
+        });
+      });
+    } else {
+      msgErr.textContent = err.message;
+      msgErr.classList.remove("hidden");
+    }
+  });
+});
+</script>
+
+</body>
+</html>

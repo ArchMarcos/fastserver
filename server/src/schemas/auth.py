@@ -8,6 +8,8 @@ class RegisterClientRequest(BaseModel):
     phone: str = Field(..., min_length=8, max_length=20)
     password: str = Field(..., min_length=6, max_length=128)
     address: str = Field(..., min_length=3, max_length=255)
+    lat: str | None = None
+    lng: str | None = None
 
 
 class RegisterMerchantRequest(BaseModel):
@@ -18,6 +20,8 @@ class RegisterMerchantRequest(BaseModel):
     address: str = Field(..., min_length=3, max_length=255)
     logo_url: str = ""
     opening_hours: str = ""
+    lat: str | None = None
+    lng: str | None = None
 
 
 class RegisterDriverRequest(BaseModel):
@@ -27,6 +31,8 @@ class RegisterDriverRequest(BaseModel):
     password: str = Field(..., min_length=6, max_length=128)
     address: str = Field(..., min_length=3, max_length=255)
     veiculo: str = Field(default="moto", pattern=r"^(moto|bicycle|car)?$")
+    lat: str | None = None
+    lng: str | None = None
 
 
 class LoginRequest(BaseModel):

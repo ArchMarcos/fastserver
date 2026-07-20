@@ -37,22 +37,48 @@ def deserialize(data: dict) -> dict:
 _AUTH_TOKEN: str | None = None
 
 
+def _create_token() -> str:
+    """Faz login no Portunus e retorna um token novo."""
+    temp = Client(
+        settings.DATABASE_HOST,
+        user=settings.DATABASE_USER,
+        password=settings.DATABASE_PASSWORD,
+    )
+    return temp._token
+
+
 def _get_token() -> str:
-    """Obtém um token de autenticação (uma única vez)."""
+    """Obtém um token de autenticação (com cache)."""
     global _AUTH_TOKEN
     if _AUTH_TOKEN is None:
-        temp = Client(
-            settings.DATABASE_HOST,
-            user=settings.DATABASE_USER,
-            password=settings.DATABASE_PASSWORD,
-        )
-        _AUTH_TOKEN = temp._token
+        _AUTH_TOKEN = _create_token()
     return _AUTH_TOKEN
+
+
+def refresh_token():
+    """Força um novo login no Portunus (use após reiniciar o banco)."""
+    global _AUTH_TOKEN
+    _AUTH_TOKEN = _create_token()
+    logger.info("token Portunus renovado")
+
+
+class _PortunusClient(Client):
+    """Wrapper que reautentica automaticamente se o token expirar."""
+
+    def _execute(self, query: str):
+        try:
+            return super()._execute(query)
+        except Exception as e:
+            if "invalid or expired token" in str(e).lower() or "authentication failed" in str(e).lower():
+                refresh_token()
+                self._token = _AUTH_TOKEN
+                return super()._execute(query)
+            raise
 
 
 def _make_client(table: str) -> Client:
     """Cria um Client isolado para a tabela — reusa o token global."""
-    return Client(
+    return _PortunusClient(
         settings.DATABASE_HOST,
         user=settings.DATABASE_USER,
         token=_get_token(),

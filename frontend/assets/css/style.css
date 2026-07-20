@@ -1,0 +1,159 @@
+/* ========================================
+   FastDelivery — Estilos Base
+   Cores: Azul Bebê (#7CB9E8) + Branco
+   ======================================== */
+
+/* Tailwind CDN já está no HTML — este CSS é para
+   customizações extras que o Tailwind não cobre */
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f5fafd;
+}
+::-webkit-scrollbar-thumb {
+  background: #7cb9e8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5ba0d4;
+}
+
+/* Animações */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.2s ease-in-out;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(124, 185, 232, 0.15);
+}
+
+/* Status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+.status-badge--pendente {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-badge--aceito {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.status-badge--preparando {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.status-badge--pronto,
+.status-badge--esperando_entregador {
+  background: #f3e8ff;
+  color: #6b21a8;
+}
+.status-badge--coletado,
+.status-badge--em_entrega {
+  background: #ccfbf1;
+  color: #115e59;
+}
+.status-badge--entregue {
+  background: #d1fae5;
+  color: #065f46;
+}
+.status-badge--recusado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Loading spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #7cb9e8;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  color: white;
+  font-weight: 500;
+  font-size: 0.875rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  transform: translateY(100%);
+  opacity: 0;
+  transition: all 0.3s ease-out;
+}
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+.toast--success {
+  background: #059669;
+}
+.toast--error {
+  background: #dc2626;
+}
+.toast--info {
+  background: #7cb9e8;
+}
+
+/* Componente load wrapper (para componentes HTML carregados via fetch) */
+.component-placeholder {
+  min-height: 1px;
+}

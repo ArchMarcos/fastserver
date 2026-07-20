@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Restaurante — FastDelivery</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: { 50: "#f0f8ff", 100: "#ddf0fc", 200: "#b8e0f9", 300: "#7cb9e8", 400: "#5ba0d4", 500: "#3b87bf", 600: "#2a6ea3", 700: "#1f5582", 800: "#1a3d61", 900: "#152a45" },
+            },
+            fontFamily: { sans: ['"Inter"', "system-ui", "sans-serif"] },
+          },
+        },
+      };
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg" />
+  </head>
+  <body class="bg-[#F5FAFD] font-sans min-h-screen">
+    <nav class="bg-white border-b border-brand-100">
+      <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3">
+          <img src="/assets/images/logo.svg" alt="FastDelivery" class="h-8 w-8" />
+          <span class="text-lg font-extrabold text-brand-600">Fast<span class="text-gray-800">Delivery</span></span>
+        </a>
+        <button id="logout-btn" class="text-sm text-gray-400 hover:text-red-500 transition-colors font-medium">Sair</button>
+      </div>
+    </nav>
+
+    <main class="max-w-3xl mx-auto px-4 py-16 text-center">
+      <div class="w-20 h-20 bg-brand-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+        <span class="text-4xl">👨‍🍳</span>
+      </div>
+
+      <h1 class="text-3xl font-extrabold text-gray-900 mb-2">
+        Olá, <span class="text-brand-400">Restaurante</span>
+        <span id="user-name">!</span>
+      </h1>
+      <p class="text-gray-400 mb-8" id="user-email"></p>
+
+      <div class="bg-white rounded-2xl border border-brand-100 p-6 max-w-sm mx-auto">
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+          <span class="text-sm text-gray-500">Saldo</span>
+          <span class="text-sm font-bold text-gray-800" id="user-balance">R$ 0,00</span>
+        </div>
+        <div class="flex items-center justify-between py-2 border-b border-gray-50">
+          <span class="text-sm text-gray-500">Status</span>
+          <span class="text-sm font-semibold text-emerald-600" id="user-status">✅ Ativo</span>
+        </div>
+        <div class="flex items-center justify-between py-2">
+          <span class="text-sm text-gray-500">E-mail confirmado</span>
+          <span id="user-email-confirmed" class="text-sm">---</span>
+        </div>
+      </div>
+
+      <div class="mt-8 text-sm text-gray-300">FastDelivery &copy; 2026</div>
+    </main>
+
+    <script type="module">
+      import { getUser, logout } from "/assets/js/main.js";
+
+      const user = getUser();
+
+      if (!user) {
+        window.location.href = "/auth/login.html";
+      } else {
+        document.getElementById("user-name").textContent = user.name || "!";
+        document.getElementById("user-email").textContent = user.email || "";
+
+        import("/assets/js/api.js").then(({ auth }) => {
+          auth.me(user.role)
+            .then((data) => {
+              if (data.balance !== undefined) {
+                document.getElementById("user-balance").textContent =
+                  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(data.balance);
+              }
+              document.getElementById("user-email-confirmed").textContent =
+                data.email_confirmed ? "✅ Sim" : "❌ Não";
+            })
+            .catch(() => {
+              document.getElementById("user-balance").textContent = "---";
+              document.getElementById("user-email-confirmed").textContent = "---";
+            });
+        });
+      }
+
+      document.getElementById("logout-btn").addEventListener("click", logout);
+    </script>
+  </body>
+</html>

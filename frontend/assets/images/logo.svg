@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Círculo fundo azul bebê -->
+  <circle cx="256" cy="256" r="240" fill="#7CB9E8"/>
+
+  <!-- Prato (base) -->
+  <ellipse cx="256" cy="310" rx="140" ry="30" fill="white" opacity="0.9"/>
+
+  <!-- Tampa da caixa de delivery -->
+  <path d="M156 200 L256 160 L356 200 L256 260 Z" fill="white" opacity="0.95"/>
+
+  <!-- Corpo da caixa -->
+  <rect x="176" y="200" width="160" height="100" rx="8" fill="white" opacity="0.85"/>
+
+  <!-- Aba da caixa -->
+  <rect x="176" y="200" width="160" height="20" rx="4" fill="white" opacity="0.95"/>
+
+  <!-- Detalhe fita adesiva -->
+  <rect x="248" y="160" width="16" height="140" rx="2" fill="#5ba0d4" opacity="0.6"/>
+
+  <!-- Símbolo de entrega (seta) -->
+  <path d="M256 130 L256 170" stroke="#2a6ea3" stroke-width="6" stroke-linecap="round"/>
+  <path d="M242 156 L256 170 L270 156" stroke="#2a6ea3" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Coraçãozinho -->
+  <path d="M200 170 C200 160 212 155 220 165 C228 155 240 160 240 170 C240 185 220 195 220 195 C220 195 200 185 200 170Z" fill="#f87171" opacity="0.8"/>
+</svg>

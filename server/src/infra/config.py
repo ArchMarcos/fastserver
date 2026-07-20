@@ -34,6 +34,9 @@ class Settings:
     SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
     SMTP_FROM = os.getenv("SMTP_FROM", "")
 
+    # Frontend
+    APP_URL = os.getenv("APP_URL", f"http://localhost:{os.getenv('SERVER_PORT', '3101')}")
+
     # Platform
     PLATFORM_TAX = float(os.getenv("PLATFORM_TAX", "0.05"))
     PLATFORM_NAME = os.getenv("PLATFORM_NAME", "FastDelivery")

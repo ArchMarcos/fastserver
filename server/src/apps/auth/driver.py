@@ -10,7 +10,7 @@ from src.apps.notifications import email as email_notif, in_app as in_app_notif
 from src.infra.config import settings
 
 
-def register(name, email, phone, password, address, veiculo):
+def register(name, email, phone, password, address, veiculo, lat=None, lng=None):
     logger.info("cadastro entregador: {email}")
 
     if drivers.exists(email=email):
@@ -29,6 +29,8 @@ def register(name, email, phone, password, address, veiculo):
         "password": hashed,
         "px_key": "",
         "address": address,
+        "lat": lat or "",
+        "lng": lng or "",
         "balance": 0.0,
         "status": True,
         "email_confirmed": False,
@@ -74,6 +76,9 @@ def login(ident, password):
 
     if not verify(password, user["password"]):
         raise AuthError("Senha incorreta")
+
+    if not user.get("email_confirmed"):
+        raise AuthError("E-mail não confirmado. Verifique sua caixa de entrada ou solicite o reenvio.")
 
     token = create_token({
         "sub": str(user["id"]),
@@ -132,10 +137,26 @@ def resend_confirmation(user_id):
         token=email_token,
     )
 
+    # Reenvia email
+    email_notif.send_confirmation(user_data["email"], user_data["name"], email_token)
+
     return {
-        "message": "Novo token de confirmação gerado",
+        "message": "Novo token de confirmação enviado para seu e-mail",
         "email_token": email_token,
     }
+
+
+def resend_confirmation_by_email(email):
+    """Reenvia confirmação por email (sem autenticação)."""
+    logger.info("reenviando confirmação driver por email: {email}")
+
+    try:
+        user_data = drivers.first(email=email)
+    except Exception:
+        raise NotFoundError("E-mail não encontrado")
+
+    user_data = deserialize(user_data)
+    return resend_confirmation(str(user_data["id"]))
 
 
 def go_online(driver_id):
