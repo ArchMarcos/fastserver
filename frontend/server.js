@@ -43,8 +43,8 @@ apiPaths.forEach(function(p) {
   });
 });
 
-// 3. SPA fallback
-app.get("*", function(req, res) {
+// 3. Fallback: só serve index.html na raiz. HTML inexistente → 404.
+app.get("/", function(req, res) {
   res.sendFile(join(DIST, "index.html"));
 });
 

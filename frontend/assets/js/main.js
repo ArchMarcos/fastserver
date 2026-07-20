@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (user && navAuthed) {
     const roleLabels = { client: "Cliente", merchant: "Restaurante", driver: "Entregador" };
     const label = roleLabels[user.role] || "Usuário";
-    const dashboards = { client: "/client/dashboard.html", merchant: "/merchant/dashboard.html", driver: "/driver/dashboard.html" };
+    const dashboards = { client: "/client/vitrine.html", merchant: "/merchant/dashboard.html", driver: "/driver/dashboard.html" };
     const dashboardUrl = dashboards[user.role] || "/auth/login.html";
 
     // Troca visibilidade

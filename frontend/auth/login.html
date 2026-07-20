@@ -155,7 +155,7 @@ form.addEventListener("submit", function(e) {
       user_id: r.data.user_id, name: r.data.name, email: r.data.email, role: currentRole
     }));
 
-    var dash = { client: "/client/dashboard.html", merchant: "/merchant/dashboard.html", driver: "/driver/dashboard.html" };
+    var dash = { client: "/client/vitrine.html", merchant: "/merchant/dashboard.html", driver: "/driver/dashboard.html" };
     location.href = dash[currentRole];
   })
   .catch(function(err) {
