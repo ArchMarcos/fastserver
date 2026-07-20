@@ -60,125 +60,166 @@ export const auth = {
   },
 };
 
-// ---- Client ----
+// ---- Client (prefixo /clients) ----
 export const client = {
-  // Produtos (vitrine)
-  listProducts(merchantId) {
-    const qs = merchantId ? `?merchant_id=${merchantId}` : "";
-    return request("GET", `/client/products${qs}`, null, true);
+  // Vitrine
+  listOpenMerchants() {
+    return request("GET", "/clients/vitrine/open", null, true);
+  },
+  getMerchantMenu(merchantId) {
+    return request("GET", `/clients/vitrine/merchant/${merchantId}`, null, true);
+  },
+  searchProducts(query) {
+    return request("GET", `/clients/vitrine/search?query=${encodeURIComponent(query)}`, null, true);
+  },
+  listCategories() {
+    return request("GET", "/clients/vitrine/categories", null, true);
   },
   getProduct(productId) {
-    return request("GET", `/client/products/${productId}`, null, true);
+    return request("GET", `/clients/vitrine/product/${productId}`, null, true);
   },
 
   // Carrinho
   getCart() {
-    return request("GET", "/client/cart", null, true);
+    return request("GET", "/clients/cart", null, true);
   },
   addToCart(payload) {
-    return request("POST", "/client/cart", payload, true);
+    return request("POST", "/clients/cart/add", payload, true);
   },
-  removeFromCart(productId) {
-    return request("DELETE", `/client/cart/${productId}`, null, true);
+  removeFromCart(payload) {
+    return request("POST", "/clients/cart/remove", payload, true);
+  },
+  updateCartQty(payload) {
+    return request("PATCH", "/clients/cart/qty", payload, true);
+  },
+  updateCartObs(payload) {
+    return request("PATCH", "/clients/cart/obs", payload, true);
+  },
+  clearCart() {
+    return request("POST", "/clients/cart/clear", null, true);
+  },
+  cartTotals() {
+    return request("GET", "/clients/cart/totals", null, true);
   },
 
-  // Pedidos
-  createOrder() {
-    return request("POST", "/client/ordem", null, true);
+  // Favoritos
+  listFavorites() {
+    return request("GET", "/clients/favorites", null, true);
   },
-  listOrders() {
-    return request("GET", "/client/ordem/list", null, true);
+  addFavorite(merchantId) {
+    return request("POST", `/clients/favorites/${merchantId}`, null, true);
   },
-  getOrder(ordemId) {
-    return request("GET", `/client/ordem/${ordemId}`, null, true);
-  },
-
-  // Pagamento
-  getBalance() {
-    return request("GET", "/client/balance", null, true);
-  },
-  payOrder(ordemId) {
-    return request("POST", `/client/ordem/${ordemId}/pay`, null, true);
-  },
-  getComprovantes() {
-    return request("GET", "/client/comprovantes", null, true);
-  },
-  recarregar(payload) {
-    return request("POST", "/client/recarregar", payload, true);
-  },
-  getRecargas() {
-    return request("GET", "/client/recargas", null, true);
+  removeFavorite(merchantId) {
+    return request("DELETE", `/clients/favorites/${merchantId}`, null, true);
   },
 
   // Perfil
-  updateProfile(payload) {
-    return request("PUT", "/client/profile", payload, true);
+  getProfile() {
+    return request("GET", "/clients/profile", null, true);
+  },
+  updateProfile(field, value) {
+    return request("PATCH", `/clients/profile?field=${field}&value=${encodeURIComponent(value)}`, null, true);
   },
 };
 
-// ---- Merchant ----
-export const merchant = {
-  // Dashboard
-  getDashboard() {
-    return request("GET", "/merchant/dashboard", null, true);
+// ---- Orders (prefixo /ordens) ----
+export const orders = {
+  create(payload) {
+    return request("POST", "/ordens/create", payload, true);
+  },
+  list() {
+    return request("GET", "/ordens", null, true);
+  },
+  active() {
+    return request("GET", "/ordens/active", null, true);
+  },
+  history() {
+    return request("GET", "/ordens/history", null, true);
+  },
+  getById(id) {
+    return request("GET", `/ordens/${id}`, null, true);
+  },
+  cancel(id) {
+    return request("POST", `/ordens/${id}/cancel`, null, true);
+  },
+  pay(id) {
+    return request("POST", `/ordens/${id}/pay`, null, true);
+  },
+  rate(id, payload) {
+    return request("POST", `/ordens/${id}/rate`, payload, true);
   },
 
-  // Produtos
+  // Carteira
+  balance() {
+    return request("GET", "/ordens/balance", null, true);
+  },
+  recharge(payload) {
+    return request("POST", "/ordens/recharge", payload, true);
+  },
+  paymentHistory() {
+    return request("GET", "/ordens/history/payments", null, true);
+  },
+  comprovantes() {
+    return request("GET", "/ordens/comprovantes", null, true);
+  },
+};
+
+// ---- Merchant (prefixo /merchants) ----
+export const merchant = {
+  getDashboard() {
+    return request("GET", "/merchants/dashboard", null, true);
+  },
   listProducts() {
-    return request("GET", "/merchant/products", null, true);
+    return request("GET", "/merchants/products", null, true);
   },
   createProduct(payload) {
-    return request("POST", "/merchant/products", payload, true);
+    return request("POST", "/merchants/products", payload, true);
   },
   updateProduct(productId, payload) {
-    return request("PUT", `/merchant/products/${productId}`, payload, true);
+    return request("PUT", `/merchants/products/${productId}`, payload, true);
   },
   deleteProduct(productId) {
-    return request("DELETE", `/merchant/products/${productId}`, null, true);
+    return request("DELETE", `/merchants/products/${productId}`, null, true);
   },
-
-  // Pedidos
   listOrders() {
-    return request("GET", "/merchant/ordem/list", null, true);
+    return request("GET", "/merchants/ordem/list", null, true);
   },
   getOrder(ordemId) {
-    return request("GET", `/merchant/ordem/${ordemId}`, null, true);
+    return request("GET", `/merchants/ordem/${ordemId}`, null, true);
   },
   updateOrderStatus(ordemId, payload) {
-    return request("PUT", `/merchant/ordem/${ordemId}/status`, payload, true);
+    return request("PUT", `/merchants/ordem/${ordemId}/status`, payload, true);
   },
-
-  // Financeiro
   getBalance() {
-    return request("GET", "/merchant/balance", null, true);
+    return request("GET", "/merchants/balance", null, true);
   },
   getComprovantes() {
-    return request("GET", "/merchant/comprovantes", null, true);
+    return request("GET", "/merchants/comprovantes", null, true);
   },
   getTransferencias() {
-    return request("GET", "/merchant/transferencias", null, true);
+    return request("GET", "/merchants/transferencias", null, true);
   },
 };
 
-// ---- Driver ----
+// ---- Driver (prefixo /drivers) ----
 export const driver = {
   getAvailableOrders() {
-    return request("GET", "/driver/ordem/available", null, true);
+    return request("GET", "/drivers/ordem/available", null, true);
   },
   acceptOrder(ordemId) {
-    return request("POST", `/driver/ordem/${ordemId}/accept`, null, true);
+    return request("POST", `/drivers/ordem/${ordemId}/accept`, null, true);
   },
   markDelivered(ordemId) {
-    return request("POST", `/driver/ordem/${ordemId}/delivered`, null, true);
+    return request("POST", `/drivers/ordem/${ordemId}/delivered`, null, true);
   },
   getHistory() {
-    return request("GET", "/driver/history", null, true);
+    return request("GET", "/drivers/history", null, true);
   },
   updateLocation(payload) {
-    return request("PUT", "/driver/location", payload, true);
+    return request("PUT", "/drivers/location", payload, true);
   },
   getProfile() {
-    return request("GET", "/driver/profile", null, true);
+    return request("GET", "/drivers/profile", null, true);
   },
 };
 

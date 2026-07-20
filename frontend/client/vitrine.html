@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vitrine — FastDelivery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50:"#f0f8ff",100:"#ddf0fc",200:"#b8e0f9",300:"#7cb9e8",400:"#5ba0d4",500:"#3b87bf",600:"#2a6ea3",700:"#1f5582",800:"#1a3d61",900:"#152a45" }
+          },
+          fontFamily: { sans: ['"Inter"',"system-ui","sans-serif"] }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg" />
+  <style>
+    .skeleton { background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); z-index: 9999; padding: 12px 24px; border-radius: 12px; color: white; font-weight: 600; font-size: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); transition: transform 0.25s ease; pointer-events: none; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast--ok { background: #059669; }
+    .toast--err { background: #dc2626; }
+    ::-webkit-scrollbar { height: 4px; } ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-[#F5FAFD] font-sans min-h-screen pb-20">
+
+<!-- ===== NAVBAR ===== -->
+<nav class="bg-white border-b border-gray-100 sticky top-0 z-30">
+  <div class="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
+    <a href="/client/dashboard.html" class="flex items-center gap-2 shrink-0">
+      <img src="/assets/images/logo.svg" alt="FD" class="h-7 w-7" />
+      <span class="text-sm font-extrabold text-brand-600 hidden sm:block">Fast<span class="text-gray-800">Delivery</span></span>
+    </a>
+    <!-- Search -->
+    <div class="relative flex-1 max-w-md">
+      <input type="text" id="search-input"
+        class="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:border-brand-300 focus:ring-2 focus:ring-brand-100 outline-none transition-all text-sm"
+        placeholder="Buscar prato ou restaurante..." />
+      <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+      <div id="search-drop" class="hidden absolute top-full mt-1 left-0 w-full bg-white rounded-2xl shadow-xl border border-gray-100 max-h-64 overflow-y-auto z-50"></div>
+    </div>
+    <!-- Cart -->
+    <a href="/client/cart.html" class="relative shrink-0 p-2 hover:bg-gray-50 rounded-xl transition-colors">
+      <span class="text-xl">🛒</span>
+      <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+    </a>
+  </div>
+</nav>
+
+<!-- ===== CATEGORIES ===== -->
+<div class="bg-white border-b border-gray-50">
+  <div class="max-w-6xl mx-auto px-4 py-2 flex gap-2 overflow-x-auto" id="cat-chips">
+    <button class="cat-chip shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-brand-300 text-white transition-all" data-cat="">Todos</button>
+  </div>
+</div>
+
+<!-- ===== CONTENT ===== -->
+<main class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- Título dinâmico -->
+  <div class="flex items-center justify-between mb-5">
+    <h2 id="view-title" class="text-lg font-bold text-gray-900">Restaurantes abertos</h2>
+    <button id="btn-back" class="hidden text-sm text-brand-400 hover:text-brand-500 font-semibold">&larr; Voltar</button>
+  </div>
+
+  <!-- Grid de restaurantes -->
+  <div id="merchant-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+  <!-- Grid de produtos (cardápio) -->
+  <div id="product-grid" class="hidden grid sm:grid-cols-2 gap-4"></div>
+
+  <!-- Loading -->
+  <div id="loading" class="text-center py-12 text-gray-400">
+    <div class="skeleton w-8 h-8 rounded-full mx-auto mb-3"></div>
+    <p class="text-sm">Carregando...</p>
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- ===== SCRIPT ===== -->
+<script>
+var TOKEN = localStorage.getItem("fastdelivery_token");
+var USER  = JSON.parse(localStorage.getItem("fastdelivery_user") || "{}");
+if (!TOKEN) location.href = "/auth/login.html";
+
+var $ = function(id) { return document.getElementById(id); };
+
+var currentMerchant = null;
+var cartCount = 0;
+
+// ── API helpers ──
+function api(path, opts) {
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  opts.headers["Authorization"] = "Bearer " + TOKEN;
+  if (opts.body) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(opts.body); }
+  return fetch(path, opts).then(function(r) { return r.json().then(function(d) { return {ok:r.ok, data:d}; }); });
+}
+
+// ── Toast ──
+function toast(msg, type) {
+  var t = $("toast"); t.textContent = msg; t.className = "toast toast--" + (type || "ok") + " show";
+  setTimeout(function() { t.classList.remove("show"); }, 2500);
+}
+
+// ── Cart badge ──
+function updateCartBadge() {
+  api("/clients/cart").then(function(r) {
+    if (r.ok && r.data.items) {
+      cartCount = r.data.items.length;
+      var b = $("cart-badge");
+      if (cartCount > 0) { b.textContent = cartCount; b.classList.remove("hidden"); }
+      else b.classList.add("hidden");
+    }
+  });
+}
+
+// ── Load merchants ──
+function loadMerchants(cat) {
+  $("merchant-grid").innerHTML = "";
+  $("product-grid").classList.add("hidden");
+  $("merchant-grid").classList.remove("hidden");
+  $("btn-back").classList.add("hidden");
+  $("view-title").textContent = "Restaurantes abertos";
+  $("loading").classList.remove("hidden");
+  currentMerchant = null;
+
+  api("/clients/vitrine/open").then(function(r) {
+    $("loading").classList.add("hidden");
+    if (!r.ok) { toast(r.data.detail || "Erro", "err"); return; }
+    var list = r.data;
+    if (!list.length) {
+      $("merchant-grid").innerHTML = '<div class="col-span-full text-center py-12 text-gray-400">Nenhum restaurante aberto no momento 🕐</div>';
+      return;
+    }
+    // Filtra por categoria se necessário
+    if (cat) list = list.filter(function(m) { return (m.categories || []).indexOf(cat) !== -1; });
+    if (!list.length) {
+      $("merchant-grid").innerHTML = '<div class="col-span-full text-center py-12 text-gray-400">Nenhum restaurante em "' + cat + '"</div>';
+      return;
+    }
+    list.forEach(function(m) { $("merchant-grid").appendChild(merchantCard(m)); });
+  });
+}
+
+function merchantCard(m) {
+  var div = document.createElement("div");
+  div.className = "bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition-shadow cursor-pointer";
+  div.innerHTML =
+    '<div class="flex items-start gap-4">'
+    + '<div class="w-14 h-14 rounded-xl bg-brand-100 flex items-center justify-center text-2xl shrink-0">' + (m.logo_url ? '<img src="' + m.logo_url + '" class="w-full h-full rounded-xl object-cover" alt="" />' : '🍽️') + '</div>'
+    + '<div class="flex-1 min-w-0">'
+    + '<h3 class="font-bold text-gray-900 truncate">' + m.name + '</h3>'
+    + '<p class="text-xs text-gray-400 mt-0.5">' + (m.opening_hours || "Horário não informado") + '</p>'
+    + '<div class="flex items-center gap-3 mt-2">'
+    + '<span class="text-xs text-yellow-600 font-semibold">⭐ ' + (m.rating || "0") + '</span>'
+    + '<span class="text-xs text-gray-400">🕐 ' + (m.delivery_time || "?") + 'min</span>'
+    + '<span class="text-xs text-gray-400">🚚 R$ ' + (m.taxa_delivery || 0).toFixed(2) + '</span>'
+    + '</div></div></div>';
+  div.addEventListener("click", function() { loadMerchantMenu(m); });
+  return div;
+}
+
+// ── Load merchant menu ──
+function loadMerchantMenu(m) {
+  currentMerchant = m;
+  $("merchant-grid").classList.add("hidden");
+  $("product-grid").innerHTML = "";
+  $("product-grid").classList.remove("hidden");
+  $("btn-back").classList.remove("hidden");
+  $("view-title").textContent = m.name;
+  $("loading").classList.remove("hidden");
+
+  api("/clients/vitrine/merchant/" + m.id).then(function(r) {
+    $("loading").classList.add("hidden");
+    if (!r.ok) { toast(r.data.detail || "Erro", "err"); return; }
+    var prods = r.data;
+    if (!prods.length) {
+      $("product-grid").innerHTML = '<div class="col-span-full text-center py-12 text-gray-400">Sem produtos no momento 📭</div>';
+      return;
+    }
+    prods.forEach(function(p) { $("product-grid").appendChild(productCard(p)); });
+  });
+}
+
+function productCard(p) {
+  var price = p.price || 0;
+  var disc = p.discount || 0;
+  var finalPrice = disc > 0 ? price * (1 - disc / 100) : price;
+
+  var div = document.createElement("div");
+  div.className = "bg-white rounded-2xl border border-gray-100 p-4 flex gap-4 items-start hover:shadow-md transition-shadow";
+  div.innerHTML =
+    '<div class="w-20 h-20 rounded-xl bg-brand-50 flex items-center justify-center text-3xl shrink-0">🍽️</div>'
+    + '<div class="flex-1 min-w-0">'
+    + '<h4 class="font-semibold text-gray-900 text-sm">' + p.name + '</h4>'
+    + '<p class="text-xs text-gray-400 mt-0.5 line-clamp-2">' + (p.description || "") + '</p>'
+    + '<div class="flex items-center justify-between mt-2">'
+    + '<div>'
+    + (disc > 0 ? '<span class="text-xs text-gray-400 line-through mr-1">R$ ' + price.toFixed(2) + '</span>' : '')
+    + '<span class="text-sm font-bold text-brand-600">R$ ' + finalPrice.toFixed(2) + '</span>'
+    + '</div>'
+    + '<button class="btn-add bg-brand-300 hover:bg-brand-400 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all" data-pid="' + p.id + '">+ 🛒</button>'
+    + '</div></div>';
+
+  div.querySelector(".btn-add").addEventListener("click", function(e) {
+    e.stopPropagation();
+    addToCart(p);
+  });
+  return div;
+}
+
+// ── Add to cart ──
+function addToCart(p) {
+  api("/clients/cart/add", { method: "POST", body: {
+    product_id: p.id, merchant_id: currentMerchant.id, quantidade: 1, acompanhamentos: {}, obs: ""
+  }}).then(function(r) {
+    if (!r.ok) { toast(r.data.detail || "Erro ao adicionar", "err"); return; }
+    toast("🍕 " + p.name + " adicionado!", "ok");
+    updateCartBadge();
+  });
+}
+
+// ── Search ──
+var searchTimer;
+$("search-input").addEventListener("input", function() {
+  clearTimeout(searchTimer);
+  var q = this.value.trim();
+  if (q.length < 2) { $("search-drop").classList.add("hidden"); return; }
+  searchTimer = setTimeout(function() {
+    api("/clients/vitrine/search?query=" + encodeURIComponent(q)).then(function(r) {
+      var drop = $("search-drop");
+      if (!r.ok || !r.data.length) { drop.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Nada encontrado</div>'; drop.classList.remove("hidden"); return; }
+      drop.innerHTML = "";
+      r.data.slice(0, 8).forEach(function(p) {
+        var el = document.createElement("button");
+        el.type = "button";
+        el.className = "w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 transition-colors flex items-center gap-2 border-b border-gray-50 last:border-0";
+        el.innerHTML = '<span>🍽️</span><span>' + p.name + ' <span class="text-gray-400 text-xs">— ' + p.merchant_name + '</span></span>';
+        el.addEventListener("click", function() {
+          drop.classList.add("hidden");
+          $("search-input").value = "";
+          // Carrega o merchant e destaca o produto
+          api("/clients/vitrine/merchant/" + p.merchant_id).then(function(r2) {
+            if (r2.ok && r2.data.length) {
+              var m = { id: p.merchant_id, name: p.merchant_name, logo_url: "", rating: 0, delivery_time: "?", taxa_delivery: 0, opening_hours: "" };
+              loadMerchantMenu(m);
+            }
+          });
+        });
+        drop.appendChild(el);
+      });
+      drop.classList.remove("hidden");
+    });
+  }, 300);
+});
+
+document.addEventListener("click", function(e) {
+  if (!e.target.closest("#search-drop") && e.target.id !== "search-input") $("search-drop").classList.add("hidden");
+});
+
+// ── Back button ──
+$("btn-back").addEventListener("click", function() { loadMerchants(); });
+
+// ── Categories ──
+api("/clients/vitrine/categories").then(function(r) {
+  if (r.ok && r.data.length) {
+    r.data.forEach(function(cat) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "cat-chip shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold text-gray-500 bg-gray-100 hover:bg-brand-50 hover:text-brand-600 transition-all";
+      chip.textContent = cat;
+      chip.dataset.cat = cat;
+      chip.addEventListener("click", function() {
+        document.querySelectorAll(".cat-chip").forEach(function(c) { c.classList.remove("bg-brand-300","text-white"); c.classList.add("bg-gray-100","text-gray-500"); });
+        chip.classList.remove("bg-gray-100","text-gray-500");
+        chip.classList.add("bg-brand-300","text-white");
+        loadMerchants(cat);
+      });
+      $("cat-chips").appendChild(chip);
+    });
+  }
+});
+
+// Reset "Todos" chip
+$("cat-chips").querySelector(".cat-chip").addEventListener("click", function() {
+  document.querySelectorAll(".cat-chip").forEach(function(c) { c.classList.remove("bg-brand-300","text-white"); c.classList.add("bg-gray-100","text-gray-500"); });
+  this.classList.remove("bg-gray-100","text-gray-500");
+  this.classList.add("bg-brand-300","text-white");
+  loadMerchants();
+});
+
+// ── Init ──
+updateCartBadge();
+loadMerchants();
+</script>
+</body>
+</html>

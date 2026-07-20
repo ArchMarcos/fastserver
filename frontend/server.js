@@ -34,8 +34,7 @@ app.use(express.static(DIST));
 // 2. Proxy para API (sem .html, sem assets)
 // Nota: Express app.use("/auth", ...) remove o prefixo do req.url.
 // Restauramos com req.originalUrl para o backend receber o path completo.
-const apiPaths = ["/auth", "/client", "/merchant", "/driver", "/ordem", "/notifications"];
-// Corrigido: /ordance → /ordem
+const apiPaths = ["/auth", "/clients", "/merchants", "/drivers", "/ordens", "/notifications"];
 apiPaths.forEach(function(p) {
   app.use(p, function(req, res, next) {
     if (/\.\w{2,5}$/i.test(req.path)) return next();
