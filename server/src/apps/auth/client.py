@@ -46,11 +46,12 @@ def register(name, email, phone, password, address, lat=None, lng=None):
     created = clients.create(**serialized)
 
     # Gera token de confirmação de email
-    email_token = create_email_token(str(created["id"]), email)
+    email_token = create_email_token(str(created["id"]), email, "client")
     email_confirmations.create(
         user_id=str(created["id"]),
         email=email,
         token=email_token,
+        role="client",
     )
 
     # Envia email de confirmação (não bloqueante)
@@ -108,7 +109,7 @@ def confirm_email(token):
 
     user_id = payload["sub"]
 
-    record = email_confirmations.first(user_id=user_id)
+    record = email_confirmations.first(user_id=user_id, role="client")
     if not record:
         raise NotFoundError("Nenhuma solicitação de confirmação encontrada")
 
@@ -134,11 +135,12 @@ def resend_confirmation(user_id):
     if user_data.get("email_confirmed"):
         raise ValidationError("E-mail já confirmado")
 
-    email_token = create_email_token(user_id, user_data["email"])
+    email_token = create_email_token(user_id, user_data["email"], "client")
     email_confirmations.create(
         user_id=user_id,
         email=user_data["email"],
         token=email_token,
+        role="client",
     )
 
     # Reenvia email

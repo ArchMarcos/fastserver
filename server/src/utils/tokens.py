@@ -19,9 +19,9 @@ def create_token(data: dict[str, Any], expires_minutes: int = ACCESS_TOKEN_EXPIR
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_email_token(user_id: str, email: str) -> str:
-    logger.info("criando token de e-mail: {email}")
-    data = {"sub": user_id, "email": email, "type": "email_confirmation"}
+def create_email_token(user_id: str, email: str, role: str = "") -> str:
+    logger.info("criando token de e-mail: {email} ({role})")
+    data = {"sub": user_id, "email": email, "role": role, "type": "email_confirmation"}
     return create_token(data, expires_minutes=EMAIL_TOKEN_EXPIRE_MINUTES)
 
 

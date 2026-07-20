@@ -45,12 +45,13 @@ def register(name, email, phone, password, address, veiculo, lat=None, lng=None)
     serialized = serialize(driver_data)
     created = drivers.create(**serialized)
 
-    email_token = create_email_token(str(created["id"]), email)
+    email_token = create_email_token(str(created["id"]), email, "driver")
     email_notif.send_confirmation(email, name, email_token)
     email_confirmations.create(
         user_id=str(created["id"]),
         email=email,
         token=email_token,
+        role="driver",
     )
 
     return {
@@ -105,7 +106,7 @@ def confirm_email(token):
 
     user_id = payload["sub"]
 
-    record = email_confirmations.first(user_id=user_id)
+    record = email_confirmations.first(user_id=user_id, role="driver")
     if not record:
         raise NotFoundError("Nenhuma solicitação de confirmação encontrada")
 
@@ -130,11 +131,12 @@ def resend_confirmation(user_id):
     if user_data.get("email_confirmed"):
         raise ValidationError("E-mail já confirmado")
 
-    email_token = create_email_token(user_id, user_data["email"])
+    email_token = create_email_token(user_id, user_data["email"], "driver")
     email_confirmations.create(
         user_id=user_id,
         email=user_data["email"],
         token=email_token,
+        role="driver",
     )
 
     # Reenvia email

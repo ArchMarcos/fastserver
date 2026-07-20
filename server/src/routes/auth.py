@@ -37,20 +37,18 @@ async def confirm_email_get(token: str):
         return HTMLResponse(_confirm_html("Token inválido", "O link de confirmação expirou ou é inválido.", False))
 
     user_id = payload["sub"]
+    role = payload.get("role", "")
 
-    for col, app, role in [
-        (clients, client_app, "client"),
-        (merchants, merchant_app, "merchant"),
-        (drivers, driver_app, "driver"),
-    ]:
-        try:
-            col.get(user_id)
-            app.confirm_email(token)
-            return HTMLResponse(_confirm_html("E-mail confirmado! 🎉", f"Sua conta como <strong>{role}</strong> está ativa. Volte ao app e faça login.", True))
-        except Exception:
-            continue
+    apps = {"client": client_app, "merchant": merchant_app, "driver": driver_app}
+    app = apps.get(role)
+    if not app:
+        return HTMLResponse(_confirm_html("Token inválido", "Role não encontrada no token.", False))
 
-    return HTMLResponse(_confirm_html("Usuário não encontrado", "Não foi possível identificar sua conta.", False))
+    try:
+        app.confirm_email(token)
+        return HTMLResponse(_confirm_html("E-mail confirmado! 🎉", f"Sua conta como <strong>{role}</strong> está ativa. Volte ao app e faça login.", True))
+    except Exception:
+        return HTMLResponse(_confirm_html("Erro ao confirmar", "O token pode já ter sido usado ou expirado.", False))
 
 
 def _confirm_html(title: str, message: str, success: bool) -> str:
